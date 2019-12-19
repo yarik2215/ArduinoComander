@@ -1,12 +1,19 @@
 /*TODO: сделать диспетчер задач, системный таймер и очередь в виде кольцевого буфера (продумать мьютексы)*/
 
+/*TODO:если на проходе по списку вызывается функция у задачи, которая помещает задачу в конец списка с временем 0, то задача будет все время туда помещатся и не выходить из цикла,
+нужно добавить флаг который бы показывал, что данная задача уже выполнялась в этом цикле update*/
+
 #pragma once
 
 #include <Arduino.h>
 #include <stdint.h>
 
-//#define QUEUE_SIZE 100
+#define avr
+// #define esp
+
+// период таймера для работы с частотой в 1кГц
 #define FREQ_TIMER 16000UL
+
 
 struct Task{
     Task(void(*f)()) : func(f) {}
@@ -14,6 +21,7 @@ struct Task{
     uint64_t timer = 0;
     bool mutex = false;
     Task *nextTask = nullptr;
+    bool fExecuted = false;
 };
 
 class Commander{
@@ -54,7 +62,7 @@ void Commander::check()
         //выполнение задачи по истечению таймера и если функция не заблокирована
         Task *nextTask = curTask->nextTask;
 
-        if(curTask->timer == 0 && curTask->mutex == false) {
+        if(curTask->timer == 0 && curTask->mutex == false && !curTask->fExecuted) {
             if(prevTask == nullptr) {
                 head = curTask->nextTask;
             }
@@ -63,9 +71,11 @@ void Commander::check()
                 //curTask = prevTask;
             }
             curTask->func();
+            curTask->fExecuted = true;
         }
         else {
             prevTask = curTask;
+            curTask->fExecuted = false;
         }
         curTask = nextTask;
     }
