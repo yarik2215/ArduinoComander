@@ -8,11 +8,11 @@
 #include <Arduino.h>
 #include <stdint.h>
 
-#define avr
+// #define avr
 // #define esp
 
 // период таймера для работы с частотой в 1кГц
-#define FREQ_TIMER 16000UL
+// #define FREQ_TIMER 16000UL
 
 
 struct Task{
@@ -23,6 +23,7 @@ struct Task{
     Task *nextTask = nullptr;
     bool fExecuted = false;
 };
+
 
 class Commander{
 public:
@@ -37,7 +38,7 @@ private:
     Task *head = nullptr;
 };
 
-
+/*
 void Commander::begin()
 {
     cli();
@@ -49,7 +50,7 @@ void Commander::begin()
     SREG |= (1<<SREG_I);
     sei();
 }
-
+*/
 
 void Commander::check()
 {
@@ -62,7 +63,7 @@ void Commander::check()
         //выполнение задачи по истечению таймера и если функция не заблокирована
         Task *nextTask = curTask->nextTask;
 
-        if(curTask->timer == 0 && curTask->mutex == false && !curTask->fExecuted) {
+        if(!curTask->mutex && !curTask->fExecuted && curTask->timer <= millis()) {
             if(prevTask == nullptr) {
                 head = curTask->nextTask;
             }
@@ -81,11 +82,13 @@ void Commander::check()
     }
 }
 
-
-bool Commander::moveToQueue(Task* task, uint64_t time)
+/*
+    Move task to queue that will emit after time_ms
+*/
+bool Commander::moveToQueue(Task* task, uint64_t time_ms)
 {
     cli();
-    task->timer = time;
+    task->timer = millis() + time_ms;
     task->nextTask = nullptr;
     sei();
     
@@ -119,9 +122,11 @@ void Commander::updateTimer()
 
 Commander commander;
 
+/*
 ISR(TIMER1_COMPA_vect)
 {
   TCNT1 = 0;
   sei();
   commander.updateTimer();
 }
+*/
